@@ -5,9 +5,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const ejs = require('ejs');
 const env = require('dotenv').config();
-const passport = require('passport');
 const session = require('express-session');
-const loaclStrategy = require('passport-local').Strategy;
 const MongoStore = require('connect-mongo')(session);
 
 const app = express();
@@ -18,8 +16,6 @@ const connection = mongoose.createConnection(uri,{useNewUrlParser:true, useUnifi
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(express.static('static'));
 app.set('view engine', 'ejs');
-app.use(passport.initialize());
-app.use(passport.session());
 
 // took inspiration from https://levelup.gitconnected.com/everything-you-need-to-know-about-the-passport-local-passport-js-strategy-633bbab6195
 const sessionstore = new MongoStore({mongooseConnection: connection, collection:'sessions'})
@@ -33,50 +29,6 @@ const sess = {
   store:sessionstore
 };
 app.use(session(sess));
-
-passport.serializeUser((user,done)=>{
-  console.log('serializeUser '+ user);
-  done(null, user.id);
-});
-passport.deserializeUser((id,done)=>{
-  console.log('deserializeUser '+ id);
-  User.findById(id,(err,user)=>{
-    done(err,user);
-  });
-});
-
-passport.use(new loaclStrategy((username, password, cb)=>{
-  User.findOne({username:username},(err,user)=>{
-    if(!err){
-      if(user){
-        if(user.validPassword(user,password)){
-          console.log('User was authenticated in the strategy');
-          return cb(null,user)
-        }else{
-          console.log('Password Incorrect');
-          return cb(null,false, {message:'Incorrect password'})
-        }
-      }else{
-        console.log('No user found in strategey');
-        //note see if these actually need to be retuerned possible error
-        return cb(null, false, {message:'My Man don\'t even exist'})
-      }
-    }else{
-      console.log(err);
-      return cb(err)
-    }
-  });
-}));
-
-const loginAuthenticate = (req,res,next)=>{
-  console.log('loginAuthenticate has been run reult is '+ req.isAuthenticated());
-  if(req.isAuthenticated()){
-    next()
-  }else{
-    console.log('User was not authenticated');
-    res.redirect('/')
-  }
-};
 
 
 //Setting up database
@@ -100,8 +52,6 @@ userSchema.methods.validPassword = (user,pwd)=>{
 };
 
 const User = new mongoose.model('user',userSchema);
-
-
 
 //routing
 app.get('/',(req,res)=>{
@@ -151,24 +101,27 @@ app.route('/login') .get((req,res)=>{
   const saidUsername = req.body.username;
   const password = req.body.password;
 
-  const user = {
-    username:saidUsername,
-    passwor:password
-  };
-
-  req.login(user, (err)=>{
+  User.findOne({username:saidUsername},(err,result)=>{
     if(!err){
-      res.send('Nice you are logged in')
-    }
-    else{
+      if(result){
+        if(result.validPassword(result,password)){
+          res.send('Aye Your logged in')
+        }else{
+          console.log('User password incorrect');
+          res.send('G u got da pass wrong')
+        }
+      }else{
+        console.log('No user found');
+        res.send('Bro you don\'t even exist')
+      }
+    }else{
       console.log(err);
       res.redirect('/');
     }
-  })
+  });
 });
-
-app.route('/Shoppingcart') .get(loginAuthenticate, (req,res)=>{
-  res.render('shoppingCart');
+app.route('/imgs') .get( (req,res)=>{
+  res.render('imgs');
 }) .post((req,res)=>{
 
 });
