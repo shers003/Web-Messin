@@ -1,3 +1,13 @@
+/* BASIC */
+
 body{
   background: grey;
+  text-align: center;
+}
+
+
+/* Page */
+
+.container{
+  margin-top: 30px;
 }

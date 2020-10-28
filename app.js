@@ -68,6 +68,16 @@ passport.use(new loaclStrategy((username, password, cb)=>{
   });
 }));
 
+const loginAuthenticate = (req,res,next)=>{
+  console.log('loginAuthenticate has been run reult is '+ req.isAuthenticated());
+  if(req.isAuthenticated()){
+    next()
+  }else{
+    console.log('User was not authenticated');
+    res.redirect('/')
+  }
+};
+
 
 //Setting up database
 mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
@@ -95,6 +105,7 @@ const User = new mongoose.model('user',userSchema);
 
 //routing
 app.get('/',(req,res)=>{
+  console.log(req.session.cookie);
     res.render('index');
 });
 
@@ -111,18 +122,20 @@ app.route('/register') .get((req,res)=>{
     password:password
   });
 
-  User.findOne({username:username}, (err, user)=>{
+  User.findOne({username:username}, (err, result)=>{
     if(!err){
-      if(!user){
+      if(!result){
         user.save((err)=>{
           if(!err){
             console.log('This user is now save '+user);
+            req.session.passport.user = user.username;
             res.send('u had been saved')
           }else{console.log(err);}
         });
       }else{
         console.log('User already exists');
-        res.redirect('/register')
+        req.session.passport.user = result._id;
+        res.redirect('/login')
       }
     }else{
       console.log(err);
@@ -133,27 +146,30 @@ app.route('/register') .get((req,res)=>{
 });
 
 app.route('/login') .get((req,res)=>{
-  if(req.isAuthenticated()){
-    res.send('Go on lad')
-    console.log('was authenticated in /login get');
-  }else{
-    res.render('login');
-  }
-
-}) .post(passport.authenticate('local',{failureRedirect:'/'}),(req,res)=>{
-  console.log('User was authenticated in /login post');
-  res.send('Go on lad')
-})
-
-app.route('/Shoppingcart') .get((req,res)=>{
-  if(req.isAuthenticated()){
-    res.render('shoppingCart')
-    console.log('was authenticated in /Shoppingcart get');
-  }else{
-    res.render('login');
-  }
+  res.render('login');
 }) .post((req,res)=>{
+  const saidUsername = req.body.username;
+  const password = req.body.password;
 
+  const user = {
+    username:saidUsername,
+    passwor:password
+  };
+
+  req.login(user, (err)=>{
+    if(!err){
+      res.send('Nice you are logged in')
+    }
+    else{
+      console.log(err);
+      res.redirect('/');
+    }
+  })
+});
+
+app.route('/Shoppingcart') .get(loginAuthenticate, (req,res)=>{
+  res.render('shoppingCart');
+}) .post((req,res)=>{
 
 });
 
