@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema({
   password:String
 });
 userSchema.methods.validPassword = (user,pwd)=>{
+  console.log(this);
   const userPwd = user.password;
   const pass = bcrypt.compareSync(pwd, userPwd);
   return pass;
@@ -90,7 +91,12 @@ app.route('/register') .get((req,res)=>{
         });
       }else{
         console.log('User already exists');
-        res.redirect('/imgs')
+        if(result.validPassword(result,req.body.password)){
+          res.redirect('/imgs')
+        }else{
+          console.log('User password incorrect');
+          res.send('G u got da pass wrong')
+        }
       }
     }else{
       console.log(err);
@@ -128,10 +134,6 @@ app.route('/login') .get((req,res)=>{
 app.route('/imgs') .get( (req,res)=>{
   Post.find({},(err,results)=>{
     if(!err){
-      console.log(results);
-      results.forEach((i)=>{
-        console.log(results[i]);
-      });
       res.render('imgs',{userInputs:results})
     }else{console.log(err);res.send(err)}
   });
