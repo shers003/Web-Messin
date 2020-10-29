@@ -53,9 +53,16 @@ userSchema.methods.validPassword = (user,pwd)=>{
 
 const User = new mongoose.model('user',userSchema);
 
+//Image/caption collections
+const postSchema = new mongoose.Schema({
+  caption:String,
+  imageURL:String
+})
+
+const Post = new mongoose.model('post',postSchema);
+
 //routing
 app.get('/',(req,res)=>{
-  console.log(req.session.cookie);
     res.render('index');
 });
 
@@ -78,14 +85,12 @@ app.route('/register') .get((req,res)=>{
         user.save((err)=>{
           if(!err){
             console.log('This user is now save '+user);
-            req.session.passport.user = user.username;
-            res.send('u had been saved')
+            res.redirect('/imgs')
           }else{console.log(err);}
         });
       }else{
         console.log('User already exists');
-        req.session.passport.user = result._id;
-        res.redirect('/login')
+        res.redirect('/imgs')
       }
     }else{
       console.log(err);
@@ -105,7 +110,7 @@ app.route('/login') .get((req,res)=>{
     if(!err){
       if(result){
         if(result.validPassword(result,password)){
-          res.send('Aye Your logged in')
+          res.redirect('/imgs')
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -121,8 +126,34 @@ app.route('/login') .get((req,res)=>{
   });
 });
 app.route('/imgs') .get( (req,res)=>{
-  res.render('imgs');
+  Post.find({},(err,results)=>{
+    if(!err){
+      console.log(results);
+      results.forEach((i)=>{
+        console.log(results[i]);
+      });
+      res.render('imgs',{userInputs:results})
+    }else{console.log(err);res.send(err)}
+  });
+
+
 }) .post((req,res)=>{
+  const userCaption = req.body.caption;
+  const userImg = req.body.imgURL;
+
+  const post = new Post({
+    caption: userCaption,
+    imageURL: userImg
+  });
+
+  post.save((err)=>{
+    if(!err){
+        console.log('post has been saved');
+        res.redirect('/imgs');
+    }else{
+
+    }
+  })
 
 });
 
