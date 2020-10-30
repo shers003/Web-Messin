@@ -14,30 +14,34 @@ const app = express();
 const port = 3000;
 const uri = 'mongodb://localhost:27017/messinDB'
 const connection = mongoose.createConnection(uri,{useNewUrlParser:true, useUnifiedTopology:true});
-
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(express.static('static'));
-app.use(cookieParser());
-//read up on what the .set method deos
-app.set('view engine', 'ejs');
-
-
-/**************** Coustom middleware ****************/
-
-
-
 // took inspiration from https://levelup.gitconnected.com/everything-you-need-to-know-about-the-passport-local-passport-js-strategy-633bbab6195
 const sessionstore = new MongoStore({mongooseConnection: connection, collection:'sessions'})
-
-//creating user login session
 const sess = {
-  name:'userSess',
   secret: process.env.SESSIONSECRET,
   resave:false,
   saveUninitialized:false,
   store:sessionstore
 };
+/**************** Coustom middleware ****************/
+const checkUser = (req,res,next)=>{
+  if (req.cookies.user){
+    next()
+  }else{
+    res.redirect('/');
+  }
+};
+
+/**************** middleware ****************/
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static('static'));
+app.use(cookieParser());
 app.use(session(sess));
+//read up on what the .set method deos
+app.set('view engine', 'ejs');
+
+
+
+
 
 
 /**************** Setting up database *********************/
@@ -94,7 +98,7 @@ app.route('/register') .get((req,res)=>{
         user.save((err)=>{
           if(!err){
             console.log('This user is now save '+user);
-            res.redirect('/imgs')
+            res.cookie('user',user.username).redirect('/imgs')
           }else{console.log(err);}
         });
       }else{
@@ -124,7 +128,7 @@ app.route('/login') .get((req,res)=>{
     if(!err){
       if(result){
         if(result.validPassword(result,password)){
-          res.cookie('user',result.username).redirect('/imgs')
+          res.cookie('user',result.username).redirect('/imgs');
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -139,11 +143,12 @@ app.route('/login') .get((req,res)=>{
     }
   });
 });
-app.route('/imgs') .get( (req,res)=>{
+app.route('/imgs') .get( checkUser, (req,res)=>{
+  const user = req.cookies.user
   console.log(req.cookies);
   Post.find({},(err,results)=>{
     if(!err){
-      res.render('imgs',{userInputs:results})
+      res.render('imgs',{userInputs:results,user:user})
     }else{console.log(err);res.send(err)}
   });
 
