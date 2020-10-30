@@ -7,6 +7,8 @@ const ejs = require('ejs');
 const env = require('dotenv').config();
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
+// Learnt about this at https://www.tutorialspoint.com/expressjs/expressjs_cookies.htm
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const port = 3000;
@@ -15,7 +17,14 @@ const connection = mongoose.createConnection(uri,{useNewUrlParser:true, useUnifi
 
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(express.static('static'));
+app.use(cookieParser());
+//read up on what the .set method deos
 app.set('view engine', 'ejs');
+
+
+/**************** Coustom middleware ****************/
+
+
 
 // took inspiration from https://levelup.gitconnected.com/everything-you-need-to-know-about-the-passport-local-passport-js-strategy-633bbab6195
 const sessionstore = new MongoStore({mongooseConnection: connection, collection:'sessions'})
@@ -31,7 +40,7 @@ const sess = {
 app.use(session(sess));
 
 
-//Setting up database
+/**************** Setting up database *********************/
 mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
   if(!err){
     console.log('connected succesfuly to mongo');
@@ -40,13 +49,12 @@ mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
   }
 });
 
-//user collection
+/*************** user collection *****************/
 const userSchema = new mongoose.Schema({
   username:String,
   password:String
 });
 userSchema.methods.validPassword = (user,pwd)=>{
-  console.log(this);
   const userPwd = user.password;
   const pass = bcrypt.compareSync(pwd, userPwd);
   return pass;
@@ -54,7 +62,7 @@ userSchema.methods.validPassword = (user,pwd)=>{
 
 const User = new mongoose.model('user',userSchema);
 
-//Image/caption collections
+/********************* Image/caption collections ****************/
 const postSchema = new mongoose.Schema({
   caption:String,
   imageURL:String
@@ -64,7 +72,7 @@ const Post = new mongoose.model('post',postSchema);
 
 //routing
 app.get('/',(req,res)=>{
-    res.render('index');
+  res.render('index');
 });
 
 app.route('/register') .get((req,res)=>{
@@ -92,7 +100,7 @@ app.route('/register') .get((req,res)=>{
       }else{
         console.log('User already exists');
         if(result.validPassword(result,req.body.password)){
-          res.redirect('/imgs')
+          res.cookie('user',result.username).redirect('/imgs')
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -116,7 +124,7 @@ app.route('/login') .get((req,res)=>{
     if(!err){
       if(result){
         if(result.validPassword(result,password)){
-          res.redirect('/imgs')
+          res.cookie('user',result.username).redirect('/imgs')
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -132,6 +140,7 @@ app.route('/login') .get((req,res)=>{
   });
 });
 app.route('/imgs') .get( (req,res)=>{
+  console.log(req.cookies);
   Post.find({},(err,results)=>{
     if(!err){
       res.render('imgs',{userInputs:results})
@@ -157,6 +166,12 @@ app.route('/imgs') .get( (req,res)=>{
     }
   })
 
+});
+
+app.get('/logout',(req,res)=>{
+  res.clearCookie('user');
+  console.log(req.cookies);
+  res.send('Clear cookie');
 });
 
 app.listen(port,(req,res)=>{
