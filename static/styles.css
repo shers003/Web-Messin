@@ -13,6 +13,17 @@ body{
 }
 
 .img{
-  height: 500px;
-  length: 500px;
+  width: 50%;
+  height:500px;
+}
+
+/***** posts*****/
+.card{
+  text-align:center;
+  margin: 4px;
+  position: relative;
+  left:100px;
+  width: 75%;
+  height:50rem;
+
 }

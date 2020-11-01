@@ -53,10 +53,21 @@ mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
   }
 });
 
+
+/********************* Image/caption collections ****************/
+const postSchema = new mongoose.Schema({
+  user:String,
+  caption:String,
+  imageURL:String
+})
+
+const Post = new mongoose.model('post',postSchema);
+
 /*************** user collection *****************/
 const userSchema = new mongoose.Schema({
   username:String,
-  password:String
+  password:String,
+  posts:[postSchema]
 });
 userSchema.methods.validPassword = (user,pwd)=>{
   const userPwd = user.password;
@@ -65,14 +76,6 @@ userSchema.methods.validPassword = (user,pwd)=>{
 };
 
 const User = new mongoose.model('user',userSchema);
-
-/********************* Image/caption collections ****************/
-const postSchema = new mongoose.Schema({
-  caption:String,
-  imageURL:String
-})
-
-const Post = new mongoose.model('post',postSchema);
 
 //routing
 app.get('/',(req,res)=>{
@@ -144,8 +147,8 @@ app.route('/login') .get((req,res)=>{
   });
 });
 app.route('/imgs') .get( checkUser, (req,res)=>{
-  const user = req.cookies.user
-  console.log(req.cookies);
+  const user = req.cookies.user;
+
   Post.find({},(err,results)=>{
     if(!err){
       res.render('imgs',{userInputs:results,user:user})
@@ -157,19 +160,45 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
   const userCaption = req.body.caption;
   const userImg = req.body.imgURL;
 
-  const post = new Post({
-    caption: userCaption,
-    imageURL: userImg
-  });
 
-  post.save((err)=>{
+  User.findOne({username:req.cookies.user},(err,result)=>{
+    var i =0;
     if(!err){
-        console.log('post has been saved');
-        res.redirect('/imgs');
-    }else{
+      if(result){
 
+        const post = new Post({
+          user:result.username,
+          caption: userCaption,
+          imageURL: userImg
+        });
+
+        post.save((err)=>{
+          if(!err){
+              console.log('post has been saved');
+          }else{
+            console.log(err);
+          }
+        });
+
+        for(i;i<result.posts.length;i++){
+          console.log(result.posts[i]);
+        }
+        result.posts[i] = post;
+        result.save((err)=>{
+          console.log('Post has been saved to user ' + result.username);
+          res.redirect('/imgs')
+        })
+      }else{
+        console.log('User not found');
+        res.redirect('/')
+      }
+    }else{
+      console.log(err);
+      res.redirect('/')
     }
   })
+
+
 
 });
 

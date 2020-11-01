@@ -51,14 +51,24 @@
           </a>
         </div> -->
 
-        <ul>
-          <% for(var i=0;i< userInputs.length;i++){ %>
-            <li>
-              <img src="<%= userInputs[i].imageURL %>" class="img" alt="...">
-              <h3><%= userInputs[i].caption %></h3>
-            </li>
-          <% } %>
-        </ul>
+
+        <% for(var i=0;i< userInputs.length;i++){ %>
+        <div class="container">
+          <div class="row">
+            <div class="post">
+
+
+            </div>
+            <div class="card post">
+              <div class="card-header"><h3><%= userInputs[i].caption %></h3></div>
+              <div class="card-body"><img src="<%= userInputs[i].imageURL %>" class="img" alt="..."></div>
+              <div class="card-footer">Submitted by user <%= userInputs[i].user %></div>
+            </div>
+
+          </div>
+        </div>
+        <% } %>
+
       </div>
     </div>
   </div>
