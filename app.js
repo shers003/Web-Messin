@@ -1,3 +1,4 @@
+/************* A place where a mess around ****************/
 //requiring pacakges
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -39,11 +40,6 @@ app.use(session(sess));
 //read up on what the .set method deos
 app.set('view engine', 'ejs');
 
-
-
-
-
-
 /**************** Setting up database *********************/
 mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
   if(!err){
@@ -80,6 +76,11 @@ const User = new mongoose.model('user',userSchema);
 //routing
 app.get('/',(req,res)=>{
   res.render('index');
+  if(req.session.page_views){
+   req.session.page_views++;
+  } else {
+   req.session.page_views = 1;
+}
 });
 
 app.route('/register') .get((req,res)=>{
@@ -101,13 +102,17 @@ app.route('/register') .get((req,res)=>{
         user.save((err)=>{
           if(!err){
             console.log('This user is now save '+user);
+            req.session.user = result.username;
+            req.session.expires = new Date(Date.now() + 3600000);
             res.cookie('user',user.username).redirect('/imgs')
           }else{console.log(err);}
         });
       }else{
         console.log('User already exists');
         if(result.validPassword(result,req.body.password)){
-          res.cookie('user',result.username).redirect('/imgs')
+          req.session.user = result.username;
+          req.session.expires = new Date(Date.now() + 3600000);
+          res.cookie('user',result.username, {maxAge:3600000}).redirect('/imgs')
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -131,7 +136,9 @@ app.route('/login') .get((req,res)=>{
     if(!err){
       if(result){
         if(result.validPassword(result,password)){
-          res.cookie('user',result.username).redirect('/imgs');
+          req.session.user = result.username;
+          req.session.expires = new Date(Date.now() + 3600000);
+          res.cookie('user',result.username, {maxAge:3600000}).redirect('/imgs');
         }else{
           console.log('User password incorrect');
           res.send('G u got da pass wrong')
@@ -147,7 +154,7 @@ app.route('/login') .get((req,res)=>{
   });
 });
 app.route('/imgs') .get( checkUser, (req,res)=>{
-  const user = req.cookies.user;
+  const user = req.session.user;
 
   Post.find({},(err,results)=>{
     if(!err){
@@ -204,8 +211,10 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
 
 app.get('/logout',(req,res)=>{
   res.clearCookie('user');
-  console.log(req.cookies);
-  res.send('Clear cookie');
+  req.session.destroy(()=>{
+    console.log('session is destroyed');
+  });
+  res.redirect('/');
 });
 
 app.listen(port,(req,res)=>{
