@@ -1,0 +1,29 @@
+  <%- include('header') -%>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <h1>WEB MESSIN - your Imgs</h1>
+        <h2>User - <%= user %></h2>
+      </div>
+
+
+
+        <% for(var i=0;i< userInputs.length;i++){ %>
+        <div class="container">
+          <div class="row">
+            <div class="card post">
+              <div class="card-header"><h3><%= userInputs[i].caption %></h3></div>
+              <div class="card-body"><img src="<%= userInputs[i].imageURL %>" class="img" alt="..."></div>
+              <div class="card-footer">Submitted by user <%= userInputs[i].user %></div>
+            </div>
+
+          </div>
+        </div>
+        <% } %>
+
+      </div>
+    </div>
+
+
+  <%- include('footer') -%>

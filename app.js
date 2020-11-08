@@ -10,6 +10,11 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
 // Learnt about this at https://www.tutorialspoint.com/expressjs/expressjs_cookies.htm
 const cookieParser = require('cookie-parser');
+//To let user upload files
+const multer = require('multer')
+const fs = require('fs')
+//Letting user add files
+const upload = multer({dest:__dirname+'/posts'})
 
 const app = express();
 const port = 3000;
@@ -40,6 +45,7 @@ app.use(session(sess));
 //read up on what the .set method deos
 app.set('view engine', 'ejs');
 
+
 /**************** Setting up database *********************/
 mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
   if(!err){
@@ -54,7 +60,12 @@ mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
 const postSchema = new mongoose.Schema({
   user:String,
   caption:String,
-  imageURL:String
+  imageURL:String,
+  image:{
+    data:Buffer,
+    contentType:String,
+    filename:String
+  }
 })
 
 const Post = new mongoose.model('post',postSchema);
@@ -163,10 +174,10 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
   });
 
 
-}) .post((req,res)=>{
+}) .post(upload.single('image'), (req,res)=>{
   const userCaption = req.body.caption;
   const userImg = req.body.imgURL;
-
+  console.log(req.file);
 
   User.findOne({username:req.cookies.user},(err,result)=>{
     var i =0;
@@ -176,7 +187,12 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
         const post = new Post({
           user:result.username,
           caption: userCaption,
-          imageURL: userImg
+          imageURL: userImg,
+          image:{
+            data:fs.readFileSync(req.file.path),
+            contentType:'image.png',
+            filename:req.file.filename
+          }
         });
 
         post.save((err)=>{
@@ -188,7 +204,7 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
         });
 
         for(i;i<result.posts.length;i++){
-          console.log(result.posts[i]);
+
         }
         result.posts[i] = post;
         result.save((err)=>{
@@ -205,9 +221,21 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
     }
   })
 
-
-
 });
+
+app.route('/userImgs')
+
+.get((req,res)=>{
+
+  const user = req.cookies.user
+
+  Post.find({user:user},(err,results)=>{
+    if(!err){
+      res.render('userimgs',{userInputs:results,user:user})
+    }else{console.log(err);res.send(err)}
+  });
+});
+
 
 app.get('/logout',(req,res)=>{
   res.clearCookie('user');
