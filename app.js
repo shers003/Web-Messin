@@ -1,4 +1,4 @@
-/************* A place where a mess around ****************/
+/************* A place where I mess around ****************/
 //requiring pacakges
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -13,8 +13,6 @@ const cookieParser = require('cookie-parser');
 //To let user upload files
 const multer = require('multer')
 const fs = require('fs')
-//Letting user add files
-const upload = multer({dest:__dirname+'/posts'})
 
 const app = express();
 const port = 3000;
@@ -44,6 +42,8 @@ app.use(cookieParser());
 app.use(session(sess));
 //read up on what the .set method deos
 app.set('view engine', 'ejs');
+//Letting user add files
+const upload = multer({dest:__dirname+'/static/posts'})
 
 
 /**************** Setting up database *********************/
@@ -60,7 +60,6 @@ mongoose.connect(uri,{useNewUrlParser:true, useUnifiedTopology:true},(err)=>{
 const postSchema = new mongoose.Schema({
   user:String,
   caption:String,
-  imageURL:String,
   image:{
     data:Buffer,
     contentType:String,
@@ -176,8 +175,7 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
 
 }) .post(upload.single('image'), (req,res)=>{
   const userCaption = req.body.caption;
-  const userImg = req.body.imgURL;
-  console.log(req.file);
+  const userImg = req.file;
 
   User.findOne({username:req.cookies.user},(err,result)=>{
     var i =0;
@@ -187,11 +185,10 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
         const post = new Post({
           user:result.username,
           caption: userCaption,
-          imageURL: userImg,
           image:{
-            data:fs.readFileSync(req.file.path),
+            data:fs.readFileSync(userImg.path),
             contentType:'image.png',
-            filename:req.file.filename
+            filename:userImg.filename
           }
         });
 
@@ -225,7 +222,7 @@ app.route('/imgs') .get( checkUser, (req,res)=>{
 
 app.route('/userImgs')
 
-.get((req,res)=>{
+.get(checkUser,(req,res)=>{
 
   const user = req.cookies.user
 
