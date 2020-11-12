@@ -242,6 +242,28 @@ app.get('/logout',(req,res)=>{
   res.redirect('/');
 });
 
+app.post('/delete',(req,res)=>{
+  const postId = req.body.file;
+  const id = req.body.user;
+  const path = __dirname+'/static/posts/'+postId;
+  Post.deleteOne({_id:id},(err,post)=>{
+    if(!err){
+      if(post){
+          fs.unlink(path,(err)=>{
+            if(!err){
+              console.log(post+' '+postId+' Deleted');
+              res.redirect('/userImgs')
+            }else{
+              console.log(err);
+            }
+          })
+      }
+    }else{
+      console.log(err);
+    }
+  });
+});
+
 app.listen(port,(req,res)=>{
   console.log('Connected successfuly');
 });

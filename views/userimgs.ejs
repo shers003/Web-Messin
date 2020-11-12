@@ -15,7 +15,13 @@
             <div class="card post">
               <div class="card-header"><h3><%= userInputs[i].caption %></h3></div>
                 <div class="card-body"><img src="posts/<%= userInputs[i].image.filename %>" class="img" alt="..."></div>
-              <div class="card-footer">Submitted by user <%= userInputs[i].user %></div>
+              <div class="card-footer">Submitted by user <%= userInputs[i].user %>
+                <form class="" action="/delete" method="post">
+                  <input type="hidden" name="file" value="<%= userInputs[i].image.filename %>">
+                  <input type="hidden" name="user" value="<%= userInputs[i]._id%>">
+                  <input type="submit" name="" value="Delete">
+                </form>
+              </div>
             </div>
 
           </div>
